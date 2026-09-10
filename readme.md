@@ -37,7 +37,7 @@ one holding 5 liters, and one holding 3 liters. They are not marked.
 The goal is to get 4 liters in the first pitcher, and 4 liters in the second pitcher.
 
 
-### Part 2: Search tracing
+#### Part 2: Search tracing
 
 For this part we'll use [this simulator](search-visualizer.html) which illustrates the performance of different search algorithms. It shows the number of states expanded and the maximum size of the frontier, and lets you get a visual sense of how each algorithm behaves.
 
@@ -52,7 +52,7 @@ weaknesses, and shows it struggling to reach the goal.
 Take a screenshot of each configuration and include those in your PDF. 
 
 
-Part 3: Mars Rover 
+#### Part 3: Mars Rover 
 
 In this part, you'll get some more experience with Python, and with the
 concept of search as problem-solving. 
@@ -129,7 +129,7 @@ on this new problem and count the number of states generated.
 
 Please add to your written answers a table with the state data for each of the questions above.
 
-### Part 4: OR-tools.
+#### Part 4: OR-tools.
 
 In this portion of the lab, you'll get familiar with OR-tools, which you'll use in Project 2.
 
