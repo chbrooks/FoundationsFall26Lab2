@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search Algorithm Visualizer — CS 362</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #edf2f7;
+  color: #2d3748;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+header {
+  width: 100%;
+  background: linear-gradient(135deg, #2b6cb0, #2c5282);
+  color: white;
+  padding: 14px 24px;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+header h1 { font-size: 1.3rem; font-weight: 700; }
+header span { font-size: 0.85rem; opacity: 0.7; }
+
+#app {
+  width: 100%;
+  max-width: 1000px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Controls ─────────────────────────────── */
+#controls {
+  background: white;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: flex-end;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.ctrl-group { display: flex; flex-direction: column; gap: 5px; }
+
+.ctrl-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #718096;
+}
+
+select {
+  padding: 6px 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  color: #2d3748;
+}
+select:focus { border-color: #4299e1; }
+
+.num-input {
+  padding: 6px 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  background: white;
+  outline: none;
+  color: #2d3748;
+  width: 72px;
+}
+.num-input:focus { border-color: #4299e1; }
+.num-input.small { width: 52px; padding: 4px 6px; }
+
+.size-row { display: flex; align-items: center; gap: 6px; }
+.size-row input[type=range] { width: 70px; }
+.dim-label { font-size: 0.72rem; font-weight: 700; color: #a0aec0; width: 12px; }
+
+.btn-row { display: flex; gap: 4px; }
+
+button {
+  padding: 6px 13px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  background: white;
+  color: #2d3748;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+button:hover:not(:disabled) { background: #ebf8ff; border-color: #bee3f8; }
+button.active  { background: #2b6cb0; color: white; border-color: #2b6cb0; }
+button.go      { background: #38a169; color: white; border-color: #38a169; font-weight: 600; }
+button.go:hover:not(:disabled) { background: #276749; }
+button.pause   { background: #dd6b20; color: white; border-color: #dd6b20; font-weight: 600; }
+button.pause:hover:not(:disabled) { background: #9c4221; }
+button:disabled { opacity: 0.45; cursor: default; }
+
+.speed-row { display: flex; align-items: center; gap: 7px; font-size: 0.75rem; color: #718096; }
+input[type=range] { width: 90px; cursor: pointer; accent-color: #2b6cb0; }
+
+/* ── Message bar ──────────────────────────── */
+#msgbar {
+  text-align: center;
+  font-size: 0.82rem;
+  color: #718096;
+  min-height: 18px;
+  font-weight: 500;
+}
+#msgbar.ok   { color: #276749; }
+#msgbar.fail { color: #c53030; }
+
+/* ── Grid ─────────────────────────────────── */
+#grid-wrap { display: flex; justify-content: center; overflow-x: auto; padding-bottom: 4px; }
+
+#grid-canvas {
+  border-radius: 6px;
+  cursor: crosshair;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+  display: block;
+}
+
+/* ── Bottom row ───────────────────────────── */
+#bottom {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+#stats {
+  background: white;
+  border-radius: 10px;
+  padding: 14px 20px;
+  flex: 1;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 28px;
+  align-items: center;
+}
+.stat .val  { font-size: 1.7rem; font-weight: 800; color: #2b6cb0; line-height: 1; }
+.stat .lbl  { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: #a0aec0; margin-top: 3px; }
+
+#algo-info {
+  background: white;
+  border-radius: 10px;
+  padding: 14px 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #4a5568;
+  min-width: 260px;
+  max-width: 340px;
+}
+#algo-info strong { color: #2b6cb0; display: block; margin-bottom: 4px; }
+
+#legend {
+  background: white;
+  border-radius: 10px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: center;
+}
+.leg { display: flex; align-items: center; gap: 7px; font-size: 0.78rem; color: #4a5568; }
+.swatch { width: 15px; height: 15px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.12); flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Search Algorithm Visualizer</h1>
+  <span>CS 362 — Intro to Artificial Intelligence</span>
+</header>
+
+<div id="app">
+
+  <div id="controls">
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">Algorithm</div>
+      <select id="algo-select" onchange="onAlgoChange()">
+        <option value="bfs">Breadth-First Search (BFS)</option>
+        <option value="dfs">Depth-First Search (DFS)</option>
+        <option value="dls">Depth-Limited Search (DLS)</option>
+        <option value="ids">Iterative Deepening Search (IDS)</option>
+        <option value="greedy">Greedy Best-First Search</option>
+        <option value="astar" selected>A* Search</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group" id="depth-limit-group" style="display:none;">
+      <div class="ctrl-label">Depth Limit</div>
+      <input type="number" id="depth-limit" class="num-input" min="0" max="2600" value="20">
+    </div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">Draw Mode</div>
+      <div class="btn-row">
+        <button id="mode-wall"  class="active" onclick="setMode('wall')">Wall</button>
+        <button id="mode-start"          onclick="setMode('start')">Start</button>
+        <button id="mode-end"            onclick="setMode('end')">End</button>
+        <button id="mode-erase"          onclick="setMode('erase')">Erase</button>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">Run</div>
+      <div class="btn-row">
+        <button id="btn-run"   class="go"   onclick="onRun()">▶ Run</button>
+        <button id="btn-step"               onclick="onStep()">Step</button>
+        <button                             onclick="onReset()">Reset</button>
+        <button                             onclick="onClear()">Clear All</button>
+        <button                             onclick="onMaze()">Random Maze</button>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">Speed</div>
+      <div class="speed-row">
+        <span>Slow</span>
+        <input type="range" id="speed" min="1" max="100" value="55">
+        <span>Fast</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">Grid Size</div>
+      <div class="size-row">
+        <span class="dim-label">H</span>
+        <input type="range" id="rows-slider" min="10" max="40" value="25">
+        <input type="number" id="rows-input" class="num-input small" min="10" max="40" value="25">
+      </div>
+      <div class="size-row">
+        <span class="dim-label">W</span>
+        <input type="range" id="cols-slider" min="15" max="65" value="45">
+        <input type="number" id="cols-input" class="num-input small" min="15" max="65" value="45">
+      </div>
+    </div>
+
+  </div>
+
+  <div id="msgbar">Click to draw walls, then press ▶ Run — or use Step to advance one node at a time.</div>
+
+  <div id="grid-wrap">
+    <canvas id="grid-canvas"></canvas>
+  </div>
+
+  <div id="bottom">
+
+    <div id="stats">
+      <div class="stat"><div class="val" id="sv-explored">0</div><div class="lbl">Nodes Explored</div></div>
+      <div class="stat"><div class="val" id="sv-frontier">0</div><div class="lbl">Frontier Size</div></div>
+      <div class="stat"><div class="val" id="sv-maxfrontier">0</div><div class="lbl">Max Queue Size</div></div>
+      <div class="stat"><div class="val" id="sv-path">—</div><div class="lbl">Path Length</div></div>
+      <div class="stat"><div class="val" id="sv-depth">—</div><div class="lbl">Depth Limit</div></div>
+    </div>
+
+    <div id="algo-info">
+      <strong id="ai-name">A* Search</strong>
+      <span id="ai-desc"></span>
+    </div>
+
+    <div id="legend">
+      <div class="leg"><div class="swatch" style="background:#48bb78"></div>Start (S)</div>
+      <div class="leg"><div class="swatch" style="background:#fc8181"></div>End (E)</div>
+      <div class="leg"><div class="swatch" style="background:#2d3748"></div>Wall</div>
+      <div class="leg"><div class="swatch" style="background:#f6ad55"></div>Frontier (open)</div>
+      <div class="leg"><div class="swatch" style="background:#bee3f8"></div>Visited (closed)</div>
+      <div class="leg"><div class="swatch" style="background:#f6e05e"></div>Final Path</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────────────────────
+const EMPTY    = 0;
+const WALL     = 1;
+const START    = 2;
+const END      = 3;
+const FRONTIER = 4;
+const VISITED  = 5;
+const PATH     = 6;
+
+const COLOR = {
+  [EMPTY]:    '#ffffff',
+  [WALL]:     '#2d3748',
+  [START]:    '#48bb78',
+  [END]:      '#fc8181',
+  [FRONTIER]: '#f6ad55',
+  [VISITED]:  '#bee3f8',
+  [PATH]:     '#f6e05e',
+};
+
+let ROWS = 25;
+let COLS = 45;
+const CS   = 20;   // cell size px
+const GAP  = 1;    // gap between cells
+
+const ALGO_INFO = {
+  bfs: {
+    name: 'Breadth-First Search (BFS)',
+    desc: 'Explores the frontier level-by-level using a queue (FIFO). Guarantees the shortest path in an unweighted graph. Data structure: queue.',
+  },
+  dfs: {
+    name: 'Depth-First Search (DFS)',
+    desc: 'Dives as deep as possible using a stack (LIFO). Does not guarantee the shortest path. Useful for detecting whether a path exists. Data structure: stack.',
+  },
+  dls: {
+    name: 'Depth-Limited Search (DLS)',
+    desc: 'DFS that refuses to expand any node past a fixed depth limit L (set it above). Bounds memory and avoids infinite paths, but is incomplete — if the goal is deeper than L, it reports failure even though a path may exist. Data structure: stack + per-node depth.',
+  },
+  ids: {
+    name: 'Iterative Deepening Search (IDS)',
+    desc: 'Reruns depth-limited search with L = 0, 1, 2, … until the goal is found. Combines DFS’s small memory footprint with BFS’s completeness and shortest-path optimality (for unit-cost grids) — at the cost of re-exploring shallow nodes on every round. Watch the Depth Limit stat climb and the grid reset each round.',
+  },
+  greedy: {
+    name: 'Greedy Best-First Search',
+    desc: 'Always expands the node closest to the goal by heuristic h(n) = Manhattan distance. Fast but not optimal — can be fooled by obstacles. Data structure: min-heap.',
+  },
+  astar: {
+    name: 'A* Search',
+    desc: 'Combines cost-so-far g(n) and heuristic h(n): f(n) = g(n) + h(n). Optimal and complete when h is admissible. The gold standard for grid pathfinding. Data structure: min-heap.',
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Grid state
+// ─────────────────────────────────────────────────────────────────────────────
+let grid      = [];
+let startPos  = { r: 12, c: 5  };
+let endPos    = { r: 12, c: 39 };
+let drawMode  = 'wall';
+
+let mouseDown     = false;
+let firstToggle   = null;   // 'draw' | 'erase' — set on first mousedown
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Algorithm state
+// ─────────────────────────────────────────────────────────────────────────────
+let algo           = null;      // current algorithm object
+let currentAlgoName = null;     // algo-select value used to build `algo`
+let phase      = 'idle';        // 'idle' | 'running' | 'paused' | 'done'
+let explored   = 0;
+let pathLen    = null;
+let maxFrontier = 0;            // peak frontier/queue size — illustrates space usage
+let animTimer  = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Canvas
+// ─────────────────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('grid-canvas');
+const ctx    = canvas.getContext('2d');
+canvas.width  = COLS * (CS + GAP) + GAP;
+canvas.height = ROWS * (CS + GAP) + GAP;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Grid helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function initGrid() {
+  grid = Array.from({ length: ROWS }, () => Array(COLS).fill(EMPTY));
+  grid[startPos.r][startPos.c] = START;
+  grid[endPos.r  ][endPos.c  ] = END;
+}
+
+function key(r, c)   { return r * 1000 + c; }
+function rOf(k)      { return (k / 1000) | 0; }
+function cOf(k)      { return k % 1000; }
+
+function neighbors4(r, c) {
+  return [[-1,0],[1,0],[0,-1],[0,1]]
+    .map(([dr,dc]) => [r+dr, c+dc])
+    .filter(([nr,nc]) => nr>=0 && nr<ROWS && nc>=0 && nc<COLS && grid[nr][nc] !== WALL);
+}
+
+function manhattan(r, c) {
+  return Math.abs(r - endPos.r) + Math.abs(c - endPos.c);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rendering
+// ─────────────────────────────────────────────────────────────────────────────
+function render() {
+  ctx.fillStyle = '#cbd5e0';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const x = GAP + c * (CS + GAP);
+      const y = GAP + r * (CS + GAP);
+      const state = grid[r][c];
+      ctx.fillStyle = COLOR[state];
+      ctx.fillRect(x, y, CS, CS);
+
+      if (state === START || state === END) {
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.font = `bold ${CS * 0.56}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(state === START ? 'S' : 'E', x + CS/2, y + CS/2 + 1);
+      }
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Min-Heap
+// ─────────────────────────────────────────────────────────────────────────────
+class MinHeap {
+  constructor() { this.h = []; }
+  get size() { return this.h.length; }
+  push(p, v) {
+    this.h.push([p, v]);
+    let i = this.h.length - 1;
+    while (i > 0) {
+      const par = (i - 1) >> 1;
+      if (this.h[par][0] <= this.h[i][0]) break;
+      [this.h[par], this.h[i]] = [this.h[i], this.h[par]];
+      i = par;
+    }
+  }
+  pop() {
+    const top = this.h[0];
+    const last = this.h.pop();
+    if (this.h.length) {
+      this.h[0] = last;
+      let i = 0;
+      while (true) {
+        let s = i, l = 2*i+1, r = 2*i+2;
+        if (l < this.h.length && this.h[l][0] < this.h[s][0]) s = l;
+        if (r < this.h.length && this.h[r][0] < this.h[s][0]) s = r;
+        if (s === i) break;
+        [this.h[i], this.h[s]] = [this.h[s], this.h[i]];
+        i = s;
+      }
+    }
+    return top;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Algorithms  (each returns { step(), frontierSize() })
+// step() → { done: bool, found?: bool, parent?: Map }
+// ─────────────────────────────────────────────────────────────────────────────
+function makeBFS() {
+  const sk = key(startPos.r, startPos.c);
+  const queue   = [sk];
+  const seen    = new Set([sk]);
+  const parent  = new Map([[sk, -1]]);
+
+  return {
+    frontierSize: () => queue.length,
+    step() {
+      if (!queue.length) return { done: true, found: false };
+      const k = queue.shift();
+      const r = rOf(k), c = cOf(k);
+      if (r === endPos.r && c === endPos.c) return { done: true, found: true, parent };
+      if (grid[r][c] !== START) grid[r][c] = VISITED;
+      for (const [nr, nc] of neighbors4(r, c)) {
+        const nk = key(nr, nc);
+        if (!seen.has(nk)) {
+          seen.add(nk); parent.set(nk, k);
+          if (grid[nr][nc] !== END) grid[nr][nc] = FRONTIER;
+          queue.push(nk);
+        }
+      }
+      return { done: false };
+    }
+  };
+}
+
+function makeDFS() {
+  const sk = key(startPos.r, startPos.c);
+  const stack  = [sk];
+  const seen   = new Set([sk]);
+  const parent = new Map([[sk, -1]]);
+
+  return {
+    frontierSize: () => stack.length,
+    step() {
+      if (!stack.length) return { done: true, found: false };
+      const k = stack.pop();
+      const r = rOf(k), c = cOf(k);
+      if (r === endPos.r && c === endPos.c) return { done: true, found: true, parent };
+      if (grid[r][c] !== START) grid[r][c] = VISITED;
+      for (const [nr, nc] of neighbors4(r, c)) {
+        const nk = key(nr, nc);
+        if (!seen.has(nk)) {
+          seen.add(nk); parent.set(nk, k);
+          if (grid[nr][nc] !== END) grid[nr][nc] = FRONTIER;
+          stack.push(nk);
+        }
+      }
+      return { done: false };
+    }
+  };
+}
+
+function makeGreedy() {
+  const sk = key(startPos.r, startPos.c);
+  const pq     = new MinHeap();
+  const seen   = new Set([sk]);
+  const parent = new Map([[sk, -1]]);
+  pq.push(manhattan(startPos.r, startPos.c), sk);
+
+  return {
+    frontierSize: () => pq.size,
+    step() {
+      if (!pq.size) return { done: true, found: false };
+      const [, k] = pq.pop();
+      const r = rOf(k), c = cOf(k);
+      if (r === endPos.r && c === endPos.c) return { done: true, found: true, parent };
+      if (grid[r][c] !== START) grid[r][c] = VISITED;
+      for (const [nr, nc] of neighbors4(r, c)) {
+        const nk = key(nr, nc);
+        if (!seen.has(nk)) {
+          seen.add(nk); parent.set(nk, k);
+          if (grid[nr][nc] !== END) grid[nr][nc] = FRONTIER;
+          pq.push(manhattan(nr, nc), nk);
+        }
+      }
+      return { done: false };
+    }
+  };
+}
+
+function makeAStar() {
+  const sk = key(startPos.r, startPos.c);
+  const pq     = new MinHeap();
+  const g      = new Map([[sk, 0]]);
+  const parent = new Map([[sk, -1]]);
+  const closed = new Set();
+  pq.push(manhattan(startPos.r, startPos.c), sk);
+
+  return {
+    frontierSize: () => pq.size,
+    step() {
+      while (pq.size) {
+        const [, k] = pq.pop();
+        if (closed.has(k)) continue;   // stale entry
+        closed.add(k);
+        const r = rOf(k), c = cOf(k);
+        if (r === endPos.r && c === endPos.c) return { done: true, found: true, parent };
+        if (grid[r][c] !== START) grid[r][c] = VISITED;
+        const gk = g.get(k);
+        for (const [nr, nc] of neighbors4(r, c)) {
+          const nk = key(nr, nc);
+          if (closed.has(nk)) continue;
+          const ng = gk + 1;
+          if (!g.has(nk) || ng < g.get(nk)) {
+            g.set(nk, ng); parent.set(nk, k);
+            if (grid[nr][nc] !== END) grid[nr][nc] = FRONTIER;
+            pq.push(ng + manhattan(nr, nc), nk);
+          }
+        }
+        return { done: false };   // one node expanded per step
+      }
+      return { done: true, found: false };
+    }
+  };
+}
+
+// Clears search-overlay cells (frontier/visited) between IDS rounds,
+// leaving walls, start, end, and any drawn path untouched.
+function resetOverlay() {
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (grid[r][c] === FRONTIER || grid[r][c] === VISITED)
+        grid[r][c] = EMPTY;
+}
+
+// Core depth-limited DFS, parameterized by a depth limit. Shared by both
+// makeDLS() (single run, user-set limit) and makeIDS() (many runs, limit++).
+// step() result also carries `cutoff`: true if some node was blocked purely
+// by the depth limit (so a path might still exist deeper), false if the
+// reachable region was fully exhausted without ever hitting the limit.
+function makeDLSState(limit) {
+  const sk = key(startPos.r, startPos.c);
+  const stack  = [[sk, 0]];
+  const seen   = new Set([sk]);
+  const parent = new Map([[sk, -1]]);
+  let cutoff   = false;
+
+  return {
+    frontierSize: () => stack.length,
+    step() {
+      if (!stack.length) return { done: true, found: false, cutoff };
+      const [k, d] = stack.pop();
+      const r = rOf(k), c = cOf(k);
+      if (r === endPos.r && c === endPos.c) return { done: true, found: true, parent };
+      if (grid[r][c] !== START) grid[r][c] = VISITED;
+      if (d < limit) {
+        for (const [nr, nc] of neighbors4(r, c)) {
+          const nk = key(nr, nc);
+          if (!seen.has(nk)) {
+            seen.add(nk); parent.set(nk, k);
+            if (grid[nr][nc] !== END) grid[nr][nc] = FRONTIER;
+            stack.push([nk, d + 1]);
+          }
+        }
+      } else {
+        cutoff = true;   // this node had unexplored children beyond the limit
+      }
+      return { done: false };
+    }
+  };
+}
+
+function makeDLS() {
+  const limit = Math.max(0, parseInt(document.getElementById('depth-limit').value) || 0);
+  const state = makeDLSState(limit);
+  return {
+    frontierSize: state.frontierSize,
+    depthLimit: () => limit,
+    step: () => state.step(),
+  };
+}
+
+function makeIDS() {
+  const maxLimit = ROWS * COLS;   // safe upper bound — no path could need a deeper limit
+  let limit = 0;
+  let sub = makeDLSState(limit);
+
+  return {
+    frontierSize: () => sub.frontierSize(),
+    depthLimit: () => limit,
+    step() {
+      while (true) {
+        const r = sub.step();
+        if (!r.done) return { done: false };
+        if (r.found) return { done: true, found: true, parent: r.parent };
+        if (limit >= maxLimit) return { done: true, found: false, cutoff: false };
+        limit++;
+        resetOverlay();
+        sub = makeDLSState(limit);
+      }
+    }
+  };
+}
+
+function makeAlgo(name) {
+  return { bfs: makeBFS, dfs: makeDFS, dls: makeDLS, ids: makeIDS, greedy: makeGreedy, astar: makeAStar }[name]();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Path tracing
+// ─────────────────────────────────────────────────────────────────────────────
+function buildPath(parent) {
+  const path = [];
+  let k = key(endPos.r, endPos.c);
+  while (k !== -1) {
+    path.push([rOf(k), cOf(k)]);
+    k = parent.get(k) ?? -1;
+  }
+  return path.reverse();
+}
+
+function animatePath(path) {
+  let i = 0;
+  function tick() {
+    if (i >= path.length) { updateStats(); return; }
+    const [r, c] = path[i++];
+    if (grid[r][c] !== START && grid[r][c] !== END) grid[r][c] = PATH;
+    render();
+    setTimeout(tick, 18);
+  }
+  tick();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Animation loop
+// ─────────────────────────────────────────────────────────────────────────────
+function stepDelay() {
+  const s = parseInt(document.getElementById('speed').value);
+  // 1→180ms, 100→1ms (quadratic feel)
+  return Math.max(1, Math.round(180 * Math.pow(1 - (s-1)/99, 2)));
+}
+
+function runLoop() {
+  if (phase !== 'running') return;
+
+  const delay = stepDelay();
+  // At high speeds do multiple steps per setTimeout to avoid overhead
+  const batch = delay <= 5 ? Math.ceil(15 / Math.max(delay, 1)) : 1;
+
+  let result = { done: false };
+  for (let i = 0; i < batch && !result.done; i++) {
+    result = algo.step();
+    explored++;
+    maxFrontier = Math.max(maxFrontier, algo.frontierSize());
+  }
+
+  render();
+  updateStats();
+
+  if (result.done) {
+    phase = 'done';
+    updateRunBtn();
+    if (result.found) {
+      const path = buildPath(result.parent);
+      pathLen = path.length - 2;   // exclude start and end nodes
+      updateStats();
+      animatePath(path);
+      msg(`Path found — length ${pathLen}, ${explored} nodes explored.`, 'ok');
+    } else {
+      msg(noPathMessage(result), 'fail');
+    }
+    return;
+  }
+
+  animTimer = setTimeout(runLoop, delay);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Control handlers
+// ─────────────────────────────────────────────────────────────────────────────
+function onRun() {
+  if (phase === 'idle' || phase === 'done') {
+    clearVisuals();
+    currentAlgoName = document.getElementById('algo-select').value;
+    algo     = makeAlgo(currentAlgoName);
+    explored = 0; pathLen = null; maxFrontier = 0;
+    phase    = 'running';
+    updateRunBtn(); updateStats();
+    msg('Running…');
+    runLoop();
+  } else if (phase === 'running') {
+    phase = 'paused';
+    clearTimeout(animTimer);
+    updateRunBtn();
+    msg('Paused. Press ▶ to continue or Step to advance one node.');
+  } else if (phase === 'paused') {
+    phase = 'running';
+    updateRunBtn();
+    msg('Running…');
+    runLoop();
+  }
+}
+
+function onStep() {
+  if (phase === 'done') return;
+  if (phase === 'running') {
+    phase = 'paused';
+    clearTimeout(animTimer);
+    updateRunBtn();
+  }
+  if (phase === 'idle') {
+    clearVisuals();
+    currentAlgoName = document.getElementById('algo-select').value;
+    algo     = makeAlgo(currentAlgoName);
+    explored = 0; pathLen = null; maxFrontier = 0;
+    phase    = 'paused';
+    updateStats();
+  }
+  const result = algo.step();
+  explored++;
+  maxFrontier = Math.max(maxFrontier, algo.frontierSize());
+  render(); updateStats();
+  if (result.done) {
+    phase = 'done';
+    updateRunBtn();
+    if (result.found) {
+      const path = buildPath(result.parent);
+      pathLen = path.length - 2;
+      updateStats();
+      animatePath(path);
+      msg(`Path found — length ${pathLen}, ${explored} nodes explored.`, 'ok');
+    } else {
+      msg(noPathMessage(result), 'fail');
+    }
+  } else {
+    msg(`Step ${explored}: frontier has ${algo.frontierSize()} node(s).`);
+  }
+}
+
+function onReset() {
+  clearTimeout(animTimer);
+  clearVisuals();
+  msg('Visualization reset. Press ▶ Run to search again.');
+}
+
+function onClear() {
+  clearTimeout(animTimer);
+  phase = 'idle'; algo = null; explored = 0; pathLen = null; maxFrontier = 0;
+  initGrid(); render(); updateStats(); updateRunBtn();
+  msg('Grid cleared. Draw walls and press ▶ Run.');
+}
+
+function onMaze() {
+  if (phase === 'running') return;
+  clearTimeout(animTimer);
+  phase = 'idle'; algo = null; explored = 0; pathLen = null; maxFrontier = 0;
+  initGrid();
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (grid[r][c] === START || grid[r][c] === END) continue;
+      grid[r][c] = Math.random() < 0.3 ? WALL : EMPTY;
+    }
+  }
+  render(); updateStats(); updateRunBtn();
+  msg('Random maze generated. Press ▶ Run to search.');
+}
+
+function onAlgoChange() {
+  if (phase === 'running') { phase = 'paused'; clearTimeout(animTimer); }
+  if (phase !== 'idle') onReset();
+  updateAlgoInfo();
+  updateDepthLimitVisibility();
+}
+
+function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+// Resizes the grid to newRows × newCols, re-centering start/end proportionally
+// and dropping any in-progress search (walls are not preserved — the old
+// layout no longer maps cleanly onto a different-sized grid).
+function applyGridSize(newRows, newCols) {
+  clearTimeout(animTimer);
+  ROWS = clamp(Math.round(newRows) || ROWS, 10, 40);
+  COLS = clamp(Math.round(newCols) || COLS, 15, 65);
+
+  canvas.width  = COLS * (CS + GAP) + GAP;
+  canvas.height = ROWS * (CS + GAP) + GAP;
+
+  startPos = { r: Math.floor(ROWS / 2), c: clamp(Math.round(COLS * 0.11), 0, COLS - 1) };
+  endPos   = { r: Math.floor(ROWS / 2), c: clamp(Math.round(COLS * 0.89), 0, COLS - 1) };
+
+  phase = 'idle'; algo = null; currentAlgoName = null;
+  explored = 0; pathLen = null; maxFrontier = 0;
+
+  initGrid();
+  syncGridSizeControls();
+  render(); updateStats(); updateRunBtn();
+  msg(`Grid resized to ${ROWS} × ${COLS}. Draw walls and press ▶ Run.`);
+}
+
+function syncGridSizeControls() {
+  document.getElementById('rows-slider').value = ROWS;
+  document.getElementById('rows-input').value  = ROWS;
+  document.getElementById('cols-slider').value = COLS;
+  document.getElementById('cols-input').value  = COLS;
+}
+
+function updateDepthLimitVisibility() {
+  const name = document.getElementById('algo-select').value;
+  document.getElementById('depth-limit-group').style.display = (name === 'dls') ? 'flex' : 'none';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function clearVisuals() {
+  phase = 'idle'; algo = null;
+  explored = 0; pathLen = null; maxFrontier = 0;
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (grid[r][c] === FRONTIER || grid[r][c] === VISITED || grid[r][c] === PATH)
+        grid[r][c] = EMPTY;
+  grid[startPos.r][startPos.c] = START;
+  grid[endPos.r  ][endPos.c  ] = END;
+  render(); updateStats(); updateRunBtn();
+}
+
+function updateRunBtn() {
+  const btn = document.getElementById('btn-run');
+  if (phase === 'running') {
+    btn.textContent = '⏸ Pause';
+    btn.className = 'pause';
+  } else {
+    btn.textContent = phase === 'paused' ? '▶ Resume' : '▶ Run';
+    btn.className = 'go';
+  }
+}
+
+function updateStats() {
+  document.getElementById('sv-explored'   ).textContent = explored;
+  document.getElementById('sv-frontier'   ).textContent = algo ? algo.frontierSize() : 0;
+  document.getElementById('sv-maxfrontier').textContent = maxFrontier;
+  document.getElementById('sv-path'       ).textContent = pathLen !== null ? pathLen : '—';
+  document.getElementById('sv-depth'      ).textContent = (algo && algo.depthLimit) ? algo.depthLimit() : '—';
+}
+
+// Shared "search finished without a path" message for runLoop() and onStep().
+function noPathMessage(result) {
+  if (currentAlgoName === 'dls' && result.cutoff) {
+    const l = algo && algo.depthLimit ? algo.depthLimit() : '?';
+    return `No path found within depth limit ${l} — the goal may lie deeper. Try raising the depth limit.`;
+  }
+  return 'No path exists between start and end.';
+}
+
+function msg(text, type = '') {
+  const el = document.getElementById('msgbar');
+  el.textContent = text;
+  el.className = type;
+}
+
+function setMode(m) {
+  drawMode = m;
+  ['wall','start','end','erase'].forEach(id =>
+    document.getElementById(`mode-${id}`).classList.toggle('active', id === m)
+  );
+}
+
+function updateAlgoInfo() {
+  const name = document.getElementById('algo-select').value;
+  const info = ALGO_INFO[name];
+  document.getElementById('ai-name').textContent = info.name;
+  document.getElementById('ai-desc').textContent = info.desc;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mouse interaction
+// ─────────────────────────────────────────────────────────────────────────────
+function cellAt(e) {
+  const rect = canvas.getBoundingClientRect();
+  const c = Math.floor((e.clientX - rect.left)  / (CS + GAP));
+  const r = Math.floor((e.clientY - rect.top)   / (CS + GAP));
+  return (r >= 0 && r < ROWS && c >= 0 && c < COLS) ? [r, c] : null;
+}
+
+function applyCell(r, c) {
+  if (phase === 'running') return;
+  const cur = grid[r][c];
+
+  if (drawMode === 'start') {
+    if (cur === END) return;
+    grid[startPos.r][startPos.c] = EMPTY;
+    startPos = { r, c }; grid[r][c] = START;
+  } else if (drawMode === 'end') {
+    if (cur === START) return;
+    grid[endPos.r][endPos.c] = EMPTY;
+    endPos = { r, c }; grid[r][c] = END;
+  } else if (drawMode === 'erase') {
+    if (cur !== START && cur !== END) grid[r][c] = EMPTY;
+  } else {   // wall mode
+    if (cur === START || cur === END) return;
+    if (firstToggle === null) firstToggle = (cur === WALL) ? 'erase' : 'draw';
+    grid[r][c] = firstToggle === 'draw' ? WALL : EMPTY;
+  }
+  render();
+}
+
+canvas.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  mouseDown = true; firstToggle = null;
+  const cell = cellAt(e);
+  if (cell) applyCell(...cell);
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (!mouseDown) return;
+  const cell = cellAt(e);
+  if (cell) applyCell(...cell);
+});
+
+canvas.addEventListener('mouseup',    () => { mouseDown = false; firstToggle = null; });
+canvas.addEventListener('mouseleave', () => { mouseDown = false; firstToggle = null; });
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+canvas.addEventListener('wheel', e => e.preventDefault(), { passive: false });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Grid size controls
+// ─────────────────────────────────────────────────────────────────────────────
+const rowsSlider = document.getElementById('rows-slider');
+const rowsInput  = document.getElementById('rows-input');
+const colsSlider = document.getElementById('cols-slider');
+const colsInput  = document.getElementById('cols-input');
+
+rowsSlider.addEventListener('input',  () => applyGridSize(rowsSlider.value, colsSlider.value));
+rowsInput.addEventListener('change',  () => applyGridSize(rowsInput.value,  colsSlider.value));
+colsSlider.addEventListener('input',  () => applyGridSize(rowsSlider.value, colsSlider.value));
+colsInput.addEventListener('change',  () => applyGridSize(rowsSlider.value, colsInput.value));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────────────────────────────────────
+initGrid();
+updateAlgoInfo();
+updateDepthLimitVisibility();
+render();
+updateStats();
+</script>
+</body>
+</html>
